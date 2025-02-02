@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LGBTQ Historical Routes</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="data.js"></script> 
+    <style>
+        body, html { margin: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        #controls { position: absolute; top: 10px; right: 10px; background: white; padding: 10px; border-radius: 5px; z-index: 1000; }
+      #path { 
+            position: absolute; top: 70px; right: 10px; 
+            background: white; padding: 10px; border-radius: 5px; 
+            z-index: 1000; display: flex; flex-direction: column; gap: 5px;
+        }
+        button { 
+            padding: 5px 10px; border: none; cursor: pointer; 
+            border-radius: 5px; font-weight: bold; 
+        }
+      .default{ background: #000000; color: white; }
+        .rainbow { background: linear-gradient(to right, red, orange, olive, green, blue, violet); color: white; }
+        .lesbian { background: linear-gradient(to left, red, fuchsia, maroon, purple); color: white; }
+        .gay { background: linear-gradient(to right, aquamarine, teal, blueviolet); color: white; }
+        .trans { background: linear-gradient(to right, aqua, white, fuchsia); color: black; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label><input type="checkbox" id="general" checked> General</label>
+        <label><input type="checkbox" id="lesbian" checked> Lesbian</label>
+        <label><input type="checkbox" id="lgbtq" checked> LGBTQ</label>
+        <label><input type="checkbox" id="transgender" checked> Transgender</label>
+        <label><input type="checkbox" id="poc" checked> POC</label>
+    </div>
+
+    <div id="path">
+        <button class="default" onclick="updateRouteColor('default')">Default</button>
+      <button class="rainbow" onclick="updateRouteColor('rainbow')">Pride</button>
+        <button class="lesbian" onclick="updateRouteColor('lesbian')">Lesbian</button>
+        <button class="gay" onclick="updateRouteColor('gay')">Gay</button>
+        <button class="trans" onclick="updateRouteColor('trans')">Trans</button>
+    </div>
+
+    <div id="popup-container"></div>
+    <div id="map"></div>
+
+    <script>
+        let map = L.map('map').setView([34.0522, -118.2437], 12);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        let userMarker = L.marker([34.0522, -118.2437], { 
+            icon: L.icon({
+                iconUrl: "Default.png",
+                iconSize: [25, 25],
+                iconAnchor: [12, 11]
+            }),
+            zIndexOffset: 1000  // Ensures marker stays on top
+        }).addTo(map);
+
+        let userLocation = null;
+        let polylines = [], markers = [];
+        let colors = ["#000000"];
+
+        function updateRouteColor(type) {
+            const colorSchemes = {
+              default: ["#000000"],
+              rainbow: [
+                  "#FF0000", "#FF1E00", "#FF3D00", "#FF5A00", "#FF7A00", // Red to Orange
+                  "#FF9600", "#FFB600", "#FFD400", "#FFFF00", "#DAFF00", "#B6FF00", // Orange to Yellow to Green
+                  "#80FF00", "#4AFF00", "#00FF00", "#00FF3D", "#00FF7A", "#00FFB6", "#00FFFF", // Green to Cyan
+                  "#00DAFF", "#00B6FF", "#008FFF", "#007AFF", "#0055FF", "#0000FF", "#1E00FF", // Cyan to Blue to Indigo
+                  "#3D00FF", "#5A00FF", "#7A00FF", "#9600FF", "#B600FF", "#D400FF", "#FF00FF"  // Indigo to Violet
+              ],
+                lesbian: [
+                  "#D52D00", "#E54A1B", "#F56837", "#FF8550", "#FF9A56", // Deep Red to Orange
+                  "#F58A78", "#EB7A9A", "#E06ABB", "#D55ADC", "#D162A4", // Orange to Pink/Purple
+                  "#B94D8C", "#A93678", "#A30262", "#8D0155", "#770048"  // Purple to Deep Magenta
+              ],
+                gay: [
+                    "#078D70", "#0D9C7F", "#13AA8E", "#1AB89D", "#21C6AB",
+                    "#26CEAA", "#43D5B0", "#61DCB6", "#7EE2BB", "#9BE8C1",
+                    "#98E8C1", "#8DD5CA", "#82C3D4", "#77B0DD", "#7BADE2",
+                    "#6D91DA", "#5F75D3", "#5159CB", "#433DC3", "#5049CC",
+                    "#473FB4", "#3E359C", "#352B85", "#2C226D", "#3D1A78"
+                  ],
+                trans: [
+                    "#55CDFC", "#6DC7FB", "#85C1FA", "#9DBAF9", "#B5B4F8", "#CDADF7", "#E6A7F6", // Light Blue to Soft Pink
+                    "#F7A8B8", "#F6AFC0", "#F5B7C8", "#F3BED0", "#F2C6D8", "#F1CDD9", "#F0D5E1", // Soft Pink transition
+                    "#F0D5FF", // White (center)
+                    "#F0D5E1", "#F1CDD9", "#F2C6D8", "#F3BED0", "#F5B7C8", "#F6AFC0", "#F7A8B8", // White back to Soft Pink
+                    "#E6A7F6", "#CDADF7", "#B5B4F8", "#9DBAF9", "#85C1FA", "#6DC7FB", "#55CDFC"  // Soft Pink back to Light Blue
+                ]
+            };
+            colors = colorSchemes[type] || ["#007AFF"];
+            findOptimalRoute(); // Redraw route with new colors
+        }
+
+        navigator.geolocation.watchPosition(
+            (position) => {
+                userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+                userMarker.setLatLng([userLocation.lat, userLocation.lng]);
+                map.setView([userLocation.lat, userLocation.lng]);
+                findOptimalRoute();
+            },
+            (error) => console.error(error),
+            { enableHighAccuracy: true }
+        );
+
+        const routes = {
+          "lgbtq": [
+            {
+              "name": "The Black Cat",
+              "category": "LGBTQ+",
+              "location": "3909 W Sunset Blvd, Los Angeles CA 90029",
+              "description": "Site of first LGBTQ+ civil rights demonstration.  \"After undercover officers began to beat and handcuff the gay clientele at the bar on New Year’s Eve 1966, what was then called the Black Cat Tavern became the meeting ground for more than 200 people who came to take a peaceful stand for their rights on February 11, 1967\"",
+              "lat": 34.0922208,
+              "lng": -118.2796587
+            },
+            {
+              "name": "ONE Archives Gallery USC",
+              "category": "LGBTQ+",
+              "location": "909 W Adams Blvd, Los Angeles CA 90007",
+              "description": "Collection of LGBTQ+ books, magazines, movies, photos and prints.",
+              "lat": 34.0310045,
+              "lng": -118.2815807
+            },
+            {
+              "name": "ONE Archives Gallery WeHo",
+              "category": "LGBTQ+",
+              "location": "626 N Robertson Blvd, West Hollywood 90069",
+              "description": "Mounted exhibitions on queer nightlife, AIDS activism, women in the leather community and Chicano networks",
+              "lat": 34.081709,
+              "lng": -118.3852601
+            },
+            {
+              "name": "The Abbey",
+              "category": "LGBTQ+",
+              "location": "692 N Robertson Blvd, West Hollywood CA 90069",
+              "description": "Annually voted as one of the world's best gay bars",
+              "lat": 34.0834191,
+              "lng": -118.3851362
+            },
+            {
+              "name": "Circus of Books",
+              "category": "LGBTQ+",
+              "location": "8230 Santa Monica Blvd, West Hollywood CA 90046",
+              "description": "Formerly a space for inlcusive explicit self-exploration, but now boasts art books and a gallery. Upscaled and now owned by drag diva Chi Chi Larue",
+              "lat": 34.0904525,
+              "lng": -118.368246
+            },
+            {
+              "name": "Mattachine Steps",
+              "category": "LGBTQ+",
+              "location": "2355 Cove Ave, Los Angeles CA 90039",
+              "description": "Founding of one of the country’s earliest gay rights groups",
+              "lat": 34.0954406,
+              "lng": -118.2611334
+            },
+            {
+              "name": "Tom of Finland House",
+              "category": "LGBTQ+",
+              "location": "1421 Laveta Terrace, Los Angeles CA 90026",
+              "description": "Formerly a gathering place for fellow influential figures in the gay visual arts, including Robert Mapplethorpe and John Waters. Now a historic monument hosting tours, exhibitions, art classes, and an annual cultural fest",
+              "lat": 34.0783208,
+              "lng": -118.2546933
+            },
+            {
+              "name": "Rainbow Crosswalk",
+              "category": "LGBTQ+",
+              "location": "807 N San Vicente Blvd, West Hollywood, CA 90069",
+              "description": "Intersection with Santa Monica Boulevard marks the longtime (and now likely former) home of LA Pride, as well as a spot along the Pride Parade route and at the gateway to one of the most vibrant gay villages in the world",
+              "lat": 34.085076,
+              "lng": -118.384393
+            },
+            {
+              "name": "Will Rogers State Beach",
+              "category": "LGBTQ+",
+              "location": "17000 CA-1, Pacific Palisades, CA 90272",
+              "description": "Unofficial gay beach of Los Angeles. Gays have been welcome here since the 1950s",
+              "lat": 34.0356343,
+              "lng": -118.5359079
+            }
+          ],
+          "transgender": [
+            {
+              "name": "Los Angeles LGBT Center and Liberation Coffee",
+              "category": "Transgender",
+              "location": "6725 Santa Monica Blvd, Los Angeles, CA 90038",
+              "description": "Provides housing, healthcare, legal assistance and job training to the city’s queer community.  \"one of the liveliest support organizations in the city thanks to its picnic-style parties, outdoor movie screenings and one of the largest transgender Pride celebrations in the country\"",
+              "lat": 34.0909978,
+              "lng": -118.3370732
+            },
+            {
+              "name": "Cooper Do-nuts (1950s-60s)",
+              "category": "Transgender",
+              "location": "E 2nd St &, Main St, Los Angeles, CA 90012",
+              "description": "This 24-hour café in Downtown LA was one of the first businesses to welcome transgender patrons, hosting a 1959 rebellion against police harassment that predated Stonewall by a decade. Located near Main/3rd Streets, it became a safe haven when most establishments excluded trans people.",
+              "lat": 34.0510106,
+              "lng": -118.2445293
+            }
+          ],
+          "poc": [
+            {
+              "name": "Catch One",
+              "category": "POC",
+              "location": "4067 W Pico Blvd, Los Angeles 90019",
+              "description": "One of the first Black gay dance bars when it opened in 1973, and certainly became the longest running; over the years it boasted performances from the likes of Whitney Houston, Janet Jackson, Donna Summer and Madonna",
+              "lat": 34.047775,
+              "lng": -118.3241134
+            },
+            {
+              "name": "Circus Disco",
+              "category": "POC",
+              "location": "6655 Santa Monica Blvd, Los Angeles, CA 90038",
+              "description": "Circus Disco, opened in 1974, played a crucial role in the Latinx LGBTQ+ community as the oldest and longest-running LGBTQ+ Latinx nightclub in Hollywood. It provided an inclusive space for patrons of all races, orientations, and gender identities",
+              "lat": 34.0915349,
+              "lng": -118.335191
+            },
+            {
+              "name": "the GJLA Center",
+              "category": "POC",
+              "location": "2701 N Broadway, Los Angeles, CA 90031",
+              "description": "Opened in 2023, the GJLA Center is a community space run by Gender Justice LA, an organization led by and for gender non-conforming, two spirit, Black, Indigenous, and trans people of color in LA",
+              "lat": 34.0739852,
+              "lng": -118.2141474
+            },
+            {
+              "name": "Yang Na Plaque at El Pueblo de Los Angeles Historical Monument",
+              "category": "POC",
+              "location": "125 Paseo de la Plz, Los Angeles, CA 90012",
+              "description": "El Pueblo de Los Ángeles, near the site of Los Angeles’ 1781 founding settlement, contains a plaque to honor Yangna, a large Tongva village in what is now downtown Los Angeles. Many Native American tribes, including the Tongva, describe individuals who embody the male and female genders as two-spirit people. In 2019, L.A. Pride kicked off with a blessing led by L. Frank Manriquez, a two-spirit Tongva-Ajachmem activist, artist and scholar.",
+              "lat": 34.0566268,
+              "lng": -118.2386828
+            }
+          ],
+          "lesbian": [
+            {
+              "name": "The Woman's Building",
+              "category": "Lesbian",
+              "location": "1727 N Spring St, Los Angeles 90012",
+              "description": "In the early 1970s, artist Judy Chicago, graphic designer Sheila Levrant de Bretteville and art historian Arlene Raven all dropped out of CalArts and together hatched the Feminist Studio Workshop, an independent art school for women that sought to challenge the patriarchal school, museum and gallery systems. During its time open, it launched a lesbian art movement, inlcuding the Great Lesbian Art Show in 1980.",
+              "lat": 34.0700929,
+              "lng": -118.2265841
+            },
+            {
+              "name": "June L. Mazer Lesbian Archives",
+              "category": "Lesbian",
+              "location": "626 N Robertson Blvd, West Hollywood, CA 90069",
+              "description": "Largest major archive on the West Coast dedicated to preserving and promoting lesbian and feminist history and culture. Its holdings include more than 2,300 titles of published materials as well as personal letters and scrapbooks, artwork, manuscripts, records, photographs, videotapes, private papers and clothing.",
+              "lat": 34.081709,
+              "lng": -118.3852601
+            },
+            {
+              "name": "Plummer Park",
+              "category": "Lesbian",
+              "location": "7377 Santa Monica Blvd, West Hollywood, CA 90046",
+              "description": "Known for its history as a meeting place for the lesbian and queer community, particularly during the feminist movements of the 1970s and 1980s.",
+              "lat": 34.0914637,
+              "lng": -118.350834
+            }
+          ],
+          "general": [
+            {
+              "name": "The Factory - The Robertson",
+              "category": "General",
+              "location": "665 N Robertson Blvd, West Hollywood 90069",
+              "description": "Served as the headquarters of Mitchell Camera Company - which designed cameras for the films Citizen Kane, Casablanca, and Singin' in the Rain - and a pioneering gay discotheque",
+              "lat": 34.0826734,
+              "lng": -118.3857981
+            },
+            {
+              "name": "Metropolitan Community Church",
+              "category": "General",
+              "location": "4607 Prospect Ave, Los Angeles, CA 90027",
+              "description": "Oldest continuously operated LGBTQ ministry in the world",
+              "lat": 34.1020959,
+              "lng": -118.2898258
+            }
+          ]
+        }
+
+        function findOptimalRoute() {
+            if (!userLocation) return;
+            
+            let selectedLocations = [userLocation];
+            Object.keys(routes).forEach(type => {
+                //console.log(type);
+                if (document.getElementById(type).checked) {
+                    selectedLocations = selectedLocations.concat(routes[type]);
+                }
+            });
+
+            if (selectedLocations.length < 2) return;
+            
+            selectedLocations = solveTSP(selectedLocations);
+            selectedLocations.push(userLocation);
+            requestOptimizedRoute(selectedLocations);
+        }
+
+        function solveTSP(locations) {
+            let orderedLocations = [locations[0]];
+            let remaining = locations.slice(1);
+
+            while (remaining.length) {
+                let last = orderedLocations[orderedLocations.length - 1];
+                let nearestIndex = remaining.reduce((bestIdx, loc, idx) => {
+                    let bestDist = getDistance(last, remaining[bestIdx]);
+                    let currentDist = getDistance(last, loc);
+                    return currentDist < bestDist ? idx : bestIdx;
+                }, 0);
+
+                orderedLocations.push(remaining[nearestIndex]);
+                remaining.splice(nearestIndex, 1);
+            }
+
+            return orderedLocations;
+        }
+
+        function getDistance(a, b) {
+            return Math.sqrt(Math.pow(a.lat - b.lat, 2) + Math.pow(a.lng - b.lng, 2));
+        }
+
+      function requestOptimizedRoute(locations) {
+          polylines.forEach(polyline => map.removeLayer(polyline));
+          polylines = [];
+          markers.forEach(marker => map.removeLayer(marker));
+          markers = [];
+
+        locations.forEach(location => {
+            let marker = L.marker([location.lat, location.lng], {icon: L.icon({
+                iconUrl: "stop.png",
+                iconSize: [15, 15], 
+                iconAnchor: [10, 10]
+            })}).addTo(map)//.bindPopup(location.name || "Location");
+
+            marker.on('click', () => {
+                createPopUpCard(location); // Assuming createPopUpCard takes a location object
+            });
+            markers.push(marker);
+        });
+        
+          const coordinates = locations.map(loc => `${loc.lng},${loc.lat}`).join(';');
+          const url = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
+
+          axios.get(url)
+              .then(response => {
+                  if (response.data.routes.length > 0) {
+                      const route = response.data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+
+                      let segmentDistance = 0;
+                      let colorIndex = 0;
+                      const segmentThreshold = 0.005; // ~500 meters (approximate)
+                      let currentSegment = [];
+                      let lastPoint = route[0];
+
+                      for (let i = 1; i < route.length; i++) {
+                          currentSegment.push(lastPoint);
+                          let distance = getDistance({ lat: lastPoint[0], lng: lastPoint[1] }, { lat: route[i][0], lng: route[i][1] });
+                          segmentDistance += distance;
+
+                          if (segmentDistance >= segmentThreshold || i === route.length - 1) {
+                              currentSegment.push(route[i]); // Ensure the last point is added
+                              let color = colors[colorIndex % colors.length];
+                              let polyline = L.polyline(currentSegment, { color, weight: 5 }).addTo(map);
+                              polylines.push(polyline);
+
+                              colorIndex++; // Switch color
+                              segmentDistance = 0; // Reset distance
+                              currentSegment = [route[i]]; // Start a new segment with the last point
+                          }
+                          lastPoint = route[i];
+                      }
+                  } else {
+                      console.error('No route found');
+                  }
+              })
+              .catch(error => console.error('Error fetching optimized route:', error));
+      }
+
+
+        document.querySelectorAll("input[type=checkbox]").forEach(checkbox => {
+            checkbox.addEventListener("change", findOptimalRoute);
+        });
+    </script>
+</body>
+</html>

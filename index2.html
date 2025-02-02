@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LGBTourLA</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #6200EE;
+        }
+
+        button {
+            padding: 15px 25px;
+            background-color: #6200EE;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 10px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3700B3;
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        iframe {
+            border: none;
+            width: 80%;
+            height: 500px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        #camera-btn,
+        #transport-btn,
+        #info-btn {
+            margin-top: 20px;
+        }
+
+        .section-header {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>QueerLens</h1>
+
+    <div class="section-header">Explore Queer Landmarks</div>
+    <button id="camera-btn">QueerLens Camera</button>
+    <button id="transport-btn">Queer Transport</button>
+    <!--<button id="info-btn">Landmark Info</button>-->
+    <button id="avatar-btn">Avatars</button>
+
+    <script>
+        let returnData = "";
+        const cameraBtn = document.getElementById('camera-btn');
+        const transportBtn = document.getElementById('transport-btn');
+        //const infoBtn = document.getElementById('info-btn');
+        const avatarBtn = document.getElementById('avatar-btn');
+        cameraBtn.onclick = () => {
+            window.location.href = 'camera.html';
+        };
+        transportBtn.onclick = () => {
+            window.location.href = 'transport.html';
+        };
+        /*infoBtn.onclick = () => {
+            window.location.href = 'info.html';
+        };*/
+        avatarBtn.onclick = () => {
+            window.location.href = 'avatar.html';
+        };
+    </script>
+
+</body>
+
+</html>

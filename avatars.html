@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>LGBTour LA</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+        <link
+            href="https://fonts.googleapis.com/css?family=Coustard"
+            rel="stylesheet"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css"
+        />
+        <script src="data.js"></script> 
+        <style>
+            body {
+                font-family: "Coustard", sans-serif;
+                text-align: center;
+                background-color: #222;
+                color: black;
+            }
+            .container {
+                max-width: 393px;
+                margin: auto;
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                overflow:hidden;
+            }
+            .avatar {
+                width: 120px;
+                height: 120px;
+                border-radius: 50%;
+                display: block;
+                margin: 10px auto;
+                background: radial-gradient(circle, #ff0000, #ff9900);
+            }
+            #smiley {
+                width: 100px;
+                height: 100px;
+                top: 90px;
+                left: 550px;
+                margin-left: -115px;
+                padding-top: -10px
+            }
+            .color-options img {
+                display: inline-block;
+                width: 70px;
+                height: 70px;
+                border-radius: 50%;
+                margin: 5px;
+                cursor: pointer;
+            }
+            .route-color img {
+                width: 300px;
+                height: 25px;
+                margin: 25px 0px;
+                cursor: pointer;
+                align-self: center;
+            }
+            .star,
+            #star {
+                max-width: 80px;
+                max-height: 80px;
+                margin-left: 10px;
+            }
+
+            .staravatar {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            #avatar {
+                margin-left: 5px;
+                margin-right: 5px;
+            }
+
+            .route-color {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .pathandsmiley {
+                display:flex;
+                justify-content:center;
+            }
+
+            #avatarmini {
+                height:60px;
+                width: 60px;
+                margin: 0px 0px 0px -20px;
+            }
+
+            h3{
+                background-color: lightgrey;
+            }
+
+            .backbutton {
+                text-align: left;
+                color: darkgrey;
+            }
+            .avatarpath {
+                width: 250px;
+                height: 30px;
+                margin-right: -40px;
+                margin-left:-150px;
+            }
+
+            .navbar {
+                display:flex;
+                justify-content: space-between;
+            }
+
+            #backtohome,
+            #backtomap {
+                text-decoration: none;
+                color: darkgrey;
+            }
+            
+        </style>
+    </head>
+    <body>
+
+        <div class="container">
+            <div class="navbar">
+                <div class="backbutton" id=backtohome>
+                    <a id=backtohome href="index.html">Home</a>
+                </div>
+                <div class="backbutton" id=backtomap>
+                    <a id=backtomap href="mobileMap.html">Map</a>
+                </div>
+            </div>
+
+
+            
+            <br>
+            <br>
+            <h1>LGBTour LA</h1>
+            <div class="staravatar">
+                <img class="avatarpath" id="avatarpath" src="paths/Rectangle 1.png"><img>
+                    <img class="avatar" id="avatar" src="avatars/Icons_Back-01.png" />
+                 <img class="smiley" id="smiley" src="avatars/Face.png" />
+                    <img class="star" id="star" src="avatars/Star.png" />
+            </div>
+            <h3>Avatar</h3>
+            <div class="color-options">
+                <img
+                    src="avatars/Bisexual.png"
+                    onclick="changeAvatar('avatars/Bisexual.png')"
+                />
+                <img
+                    src="avatars/Gay (Male).png"
+                    onclick="changeAvatar('avatars/Gay (Male).png')"
+                />
+                <img
+                    src="avatars/General LGBT.png"
+                    onclick="changeAvatar('avatars/General LGBT.png')"
+                />
+                <img
+                    src="avatars/Icons_Back-01.png"
+                    onclick="changeAvatar('avatars/Icons_Back-01.png')"
+                />
+                <img
+                    src="avatars/Lesbian.png"
+                    onclick="changeAvatar('avatars/Lesbian.png')"
+                />
+                <img
+                    src="avatars/LGBT People of Color.png"
+                    onclick="changeAvatar('avatars/LGBT People of Color.png')"
+                />
+                <img
+                    src="avatars/Nonbinary.png"
+                    onclick="changeAvatar('avatars/Nonbinary.png')"
+                />
+                <img
+                    src="avatars/Transgender.png"
+                    onclick="changeAvatar('avatars/Transgender.png')"
+                />
+            </div>
+
+
+
+            
+            <h3>Paths</h3>
+            <div class="route-color">
+                <div class ="pathandsmiley">
+                    <img
+                        class="pridepath"
+                        src="paths/Rectangle 1.png"
+                        onclick="changePath('paths/Rectangle 1.png')"
+                        />
+                    <img class="avatar" id="avatarmini" src="avatars/Default.png" />
+                </div>
+                <div class ="pathandsmiley">
+                    <img
+                        class="pridepath"
+                        src="paths/Rectangle 2.png"c
+                        onclick="changePath('paths/Rectangle 2.png')"
+                    />
+                    <img class="avatar" id="avatarmini" src="avatars/Default.png" />
+                </div>
+                <div class ="pathandsmiley">
+                    <img
+                        class="pridepath"
+                        src="paths/Rectangle 3.png"
+                        onclick="changePath('paths/Rectangle 3.png')"
+                    />
+                    <img class="avatar" id="avatarmini" src="avatars/Default.png" />
+                </div>
+                <div class ="pathandsmiley">
+                    <img
+                        class="pridepath"
+                        src="paths/Rectangle 4.png"
+                        onclick="changePath('paths/Rectangle 4.png')"
+                    />
+                    <img class="avatar" id="avatarmini" src="avatars/Default.png" />
+                </div>
+                <div class ="pathandsmiley">
+                    <img
+                        class="pridepath"
+                        src="paths/Rectangle 5.png"
+                        onclick="changePath('paths/Rectangle 5.png')"
+                    />
+                    <img class="avatar" id="avatarmini" src="avatars/Default.png" />
+                </div>
+                <div class ="pathandsmiley">
+                    <img
+                        class="pridepath"
+                        src="paths/Rectangle 6.png"
+                        onclick="changePath('paths/Rectangle 6.png')"
+                    />
+                    <img class="avatar" id="avatarmini" src="avatars/Default.png" />
+                </div>
+                <div class ="pathandsmiley">
+                    <img
+                        class="pridepath"
+                        src="paths/Rectangle 7.png"
+                        onclick="changePath('paths/Rectangle 7.png')"
+                    />
+                    <img class="avatar" id="avatarmini" src="avatars/Default.png" />
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

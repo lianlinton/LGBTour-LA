@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link
+    href="https://fonts.googleapis.com/css?family=Coustard"
+    rel="stylesheet"
+/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LGBTQ Historical Routes</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="data.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        body, html { margin: 8px; overflow: hidden; font-family: Arial, sans-serif; height:100%}
+        html {margin:0px}
+        #map {  width: 100%; }
+        #controls {padding: 10px; border-radius: 5px; z-index: 1000; }
+      #path { 
+            z-index: 1000; display: flex; flex-direction: column; gap: 5px;
+            max-height: 95px;
+            margin-top: 40px;
+            margin-left: 10px;
+            width: 260px;
+        }
+        body {
+            font-family: "Coustard", sans-serif;
+            text-align: center;
+            background-color: #222;
+            color: black;
+            display: block;
+        }
+        .container {
+            max-width: 393px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            overflow:hidden;
+        }
+
+        
+        button { 
+            padding: 5px 10px; border: none; cursor: pointer; 
+            border-radius: 5px; font-weight: bold; 
+        }
+      .default{ background: #000000; color: white; }
+        .rainbow { background: linear-gradient(to right, red, orange, olive, green, blue, violet); color: white; }
+        .lesbian { background: linear-gradient(to left, red, fuchsia, maroon, purple); color: white; }
+        .gay { background: linear-gradient(to right, aquamarine, teal, blueviolet); color: white; }
+        .trans { background: linear-gradient(to right, aqua, white, fuchsia); color: black; }
+
+        /* new here */
+
+        #map {
+            height: 520px;
+        }
+
+        #bottombar {
+            height:154px;
+            background-color:white;
+            display: flex;
+            justify-content: space-between;
+            align-items:center;
+        }
+
+        #topbar {
+            height:179px;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #controls {
+            display: flex;
+            margin: 10px;
+            margin-left: -10px
+        }
+
+        #avatarbutton {
+            height:80px;
+            width: 80px;
+            border-radius: 40px;
+            font-family: "Coustard"
+        }
+
+        #avatarbttontext {
+            font-family:"Coustard"
+        }
+
+        #startroute,
+        #tourroutes {
+            font-size: 24px;
+            font-family: "Coustard", sans-serif;
+            padding: 10px;
+            font-weight:400;
+            max-height: 54px;
+        }
+
+        #tourroutes {
+            margin-left: 20px;
+            margin-top: 90px;
+            font-size:16px;
+        }
+
+        #column {
+            display:flex;
+            flex-direction: column;
+            justify-content:center;
+            align-items: center;
+        }
+
+        label {
+            text-align: center;
+        }
+
+        .checkboximage {
+            max-height: 33px;
+            width: 33px;
+        }
+
+        #bottombardiv {
+            margin-left: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="popup-container"></div>
+
+
+
+        <!-- new starts here -->
+         <div id="topbar">
+            <button id="tourroutes">LBGTour LA</button>
+         </div>
+
+        <div id="map"></div>
+
+        <div id="bottombar">
+            <div id="bottombardiv">
+                <button id="avatarbutton"></button>
+                <button id=avatarbttontext type="button">Avatar</button>
+            </div>
+
+            <div id="controls">
+                    <div id="column">
+                        <img class="checkboximage" src="avatars/General LGBT.png">
+                        <label><input type="checkbox" id="lgbtq+" checked>LGBTQ+</label>
+                        <img class="checkboximage" src="avatars/LGBT People of Color.png">
+                        <label><input type="checkbox" id="poc" checked>LGBTQ+ POC</label>
+                    </div>
+                    <div id="column">
+                        <img class="checkboximage" src="avatars/Lesbian.png">
+                        <label><input type="checkbox" id="lesbian" checked> Lesbian</label>
+                        <img class="checkboximage" src="avatars/Transgender.png">
+                        <label><input type="checkbox" id="transgender" checked> Transgender</label>
+                    </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            document.getElementById("avatarbutton").onclick = function () {
+                location.href = "../avatars.html";
+            };
+        </script>
+
+        <!-- end -->
+
+        <script>
+            let map = L.map('map').setView([34.0522, -118.2437], 12);
+            map.on('click', () => {
+                const popUpContainer = document.getElementById("popup-container");
+                popUpContainer.innerHTML = "";
+            });
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            avatarPNG = localStorage.getItem("avatarVAR");
+            console.log(avatarPNG);
+            
+            let userMarker = L.marker([34.0522, -118.2437], { 
+                icon: L.icon({
+                    iconUrl: avatarPNG,
+                    iconSize: [25, 25],
+                    iconAnchor: [12, 11]
+                }),
+                zIndexOffset: 1000  // Ensures marker stays on top
+            }).addTo(map);
+
+            let userLocation = null;
+            let polylines = [], markers = [];
+
+            // PATH COLOR
+            hi = localStorage.getItem("pathcolors");
+            let colors = hi.split(",");
+            console.log(colors);
+
+            
+
+
+            // constantly updating
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    userMarker.setLatLng([userLocation.lat, userLocation.lng]);
+                    map.setView([userLocation.lat, userLocation.lng]);
+                    findOptimalRoute();
+                },
+                (error) => console.error(error),
+                { enableHighAccuracy: true }
+            );
+
+            let routes;
+            formatRoutes().then(result => {
+                routes = result;
+            });
+
+            /*let currName = "";
+            let currLocation = "";
+            let currDescription = "";
+            let currCategory = "*/
+            
+            function findOptimalRoute() {
+                if (!userLocation) return;
+
+                //createPopUpCard(currName, currLocation, currDescription, currCategory);
+
+                let selectedLocations = [userLocation];
+                Object.keys(routes).forEach(type => {
+                    if (document.getElementById(type).checked) {
+                        selectedLocations = selectedLocations.concat(routes[type]);
+                    }
+                });
+
+                if (selectedLocations.length < 2) return;
+
+                selectedLocations = solveTSP(selectedLocations);
+                selectedLocations.push(userLocation);
+                requestOptimizedRoute(selectedLocations);
+
+            }
+
+            function solveTSP(locations) {
+                let orderedLocations = [locations[0]];
+                let remaining = locations.slice(1);
+
+                while (remaining.length) {
+                    let last = orderedLocations[orderedLocations.length - 1];
+                    let nearestIndex = remaining.reduce((bestIdx, loc, idx) => {
+                        let bestDist = getDistance(last, remaining[bestIdx]);
+                        let currentDist = getDistance(last, loc);
+                        return currentDist < bestDist ? idx : bestIdx;
+                    }, 0);
+
+                    orderedLocations.push(remaining[nearestIndex]);
+                    remaining.splice(nearestIndex, 1);
+                }
+
+                return orderedLocations;
+            }
+
+            function getDistance(a, b) {
+                return Math.sqrt(Math.pow(a.lat - b.lat, 2) + Math.pow(a.lng - b.lng, 2));
+            }
+
+          function requestOptimizedRoute(locations) {
+              polylines.forEach(polyline => map.removeLayer(polyline));
+              polylines = [];
+              markers.forEach(marker => map.removeLayer(marker));
+              markers = [];
+
+            locations.forEach(location => {
+                let marker = L.marker([location.lat, location.lng], {icon: L.icon({
+                    iconUrl: "stop.png",
+                    iconSize: [20, 20], 
+                    iconAnchor: [10, 10]
+                })}).addTo(map)//.bindPopup(location.name || "Location");
+
+                marker.on('click', () => {
+                        // Clear the pop-up container before adding a new one
+                        const popUpContainer = document.getElementById("popup-container");
+                        popUpContainer.innerHTML = "";
+                    createPopUpCard(location.name, location.location, location.description, location.category, location.imgName);
+
+                    //updates global curr variables
+                    //currName = location.name;
+                    //currLocation = location.location;
+                    //currDescription = location.description;
+                    //currCategory = location.category;
+                });
+
+
+                markers.push(marker);
+                });
+
+              const coordinates = locations.map(loc => `${loc.lng},${loc.lat}`).join(';');
+              const url = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
+
+              axios.get(url)
+                  .then(response => {
+                      if (response.data.routes.length > 0) {
+                          const route = response.data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+
+                          let segmentDistance = 0;
+                          let colorIndex = 0;
+                          const segmentThreshold = 0.005; // ~500 meters (approximate)
+                          let currentSegment = [];
+                          let lastPoint = route[0];
+
+                          for (let i = 1; i < route.length; i++) {
+                              currentSegment.push(lastPoint);
+                              let distance = getDistance({ lat: lastPoint[0], lng: lastPoint[1] }, { lat: route[i][0], lng: route[i][1] });
+                              segmentDistance += distance;
+
+                              if (segmentDistance >= segmentThreshold || i === route.length - 1) {
+                                  currentSegment.push(route[i]); // Ensure the last point is added
+                                  let color = colors[colorIndex % colors.length];
+                                  let polyline = L.polyline(currentSegment, { color, weight: 5 }).addTo(map);
+                                  polylines.push(polyline);
+
+                                  colorIndex++; // Switch color
+                                  segmentDistance = 0; // Reset distance
+                                  currentSegment = [route[i]]; // Start a new segment with the last point
+                              }
+                              lastPoint = route[i];
+                          }
+                      } else {
+                          console.error('No route found');
+                      }
+                  })
+                  .catch(error => console.error('Error fetching optimized route:', error));
+          }
+
+
+            document.querySelectorAll("input[type=checkbox]").forEach(checkbox => {
+                checkbox.addEventListener("change", findOptimalRoute);
+            });
+        </script>
+    </div>
+</body>
+</html>

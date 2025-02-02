@@ -1,0 +1,86 @@
+/* General Styling */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Gallery Styling */
+#gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.gallery-item {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+}
+
+.gallery-item-description {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #555;
+}
+
+/* Cute Button Styling */
+button {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #ff85a2, #b48cf7);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease-in-out;
+    font-family: "Comic Sans MS", "Poppins", cursive;
+}
+
+button:hover {
+    transform: translateY(-3px) scale(1.05);
+    background: linear-gradient(135deg, #ff6f91, #a179ff);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+button:active {
+    transform: translateY(2px) scale(0.95);
+}
+
+/* Delete Button Styling */
+.delete-btn {
+    margin-top: 5px;
+    padding: 8px 12px;
+    background: #ff4f4f;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.3s ease-in-out;
+}
+
+.delete-btn:hover {
+    background: #e63946;
+    transform: scale(1.1);
+}
+
+.delete-btn:active {
+    transform: scale(0.9);
+}
+
+/* Camera & Photo Styling */
+#camera {
+    display: none;
+    width: 320px;
+    height: 240px;
+}
+
+#photo {
+    max-width: 100%;
+    height: auto;
+}
